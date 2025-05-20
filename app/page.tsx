@@ -1,103 +1,92 @@
-import Image from "next/image";
+"use client"
+import React, { useEffect, useState } from 'react'
+import axios from 'axios'
+import Waveform from '@/components/waveform';
+import { Button } from '@/components/ui/button';
+import { useControls } from '@/components/controls-provider';
+import { FastForwardIcon, PauseIcon, PlayIcon } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
-export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+const Page = () => {
+    const { controls, setControls } = useControls();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    const [audioFiles, setAudioFiles] = useState<File[]>([]);
+
+    useEffect(() => {
+        const context = new AudioContext();
+        const gainNode = context.createGain();
+        gainNode.connect(context.destination);
+        setControls(prev => ({ ...prev, context, gainNode }));
+        (async () => {
+            const response = await axios.get("/sample4.flac", { responseType: "blob" });
+            if (response) setAudioFiles([...Array(1).fill("").map(() => (response.data))]);
+        })();
+    }, [])
+
+    return <div className="w-screen h-screen flex flex-col">
+        <div className="w-screen bg-muted/50 flex items-center justify-between p-2">
+            <div className="flex flex-col gap-2 items-center jusitfy-center text-center">
+                <p className='text-sm'>Zoom</p>
+                <Slider value={[controls.zoom]} max={100} min={1} className="w-[200px]" onValueChange={(value) => setControls(prev => ({ ...prev, zoom: value[0] }))} />
+            </div>
+            <div className="flex gap-2 justify-center items-center">
+                <Button variant="outline" size="icon" onClick={() => {
+                    let wasPlaying = false;
+                    if (controls.playing) {
+                        wasPlaying = true;
+                        setControls(prev => ({ ...prev, playing: false }));
+                    }
+                    setTimeout(() => {
+                        setControls(prev => ({ ...prev, time: prev.time - 10, playing: wasPlaying }));
+                    }, 1)
+                }}>
+                    <FastForwardIcon className="rotate-180" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => {
+                    setControls(prev => ({ ...prev, playing: !controls.playing }))
+                }}>
+                    {controls.playing ? <PauseIcon /> : <PlayIcon />}
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => {
+                    let wasPlaying = false;
+                    if (controls.playing) {
+                        wasPlaying = true;
+                        setControls(prev => ({ ...prev, playing: false }));
+                    }
+                    setTimeout(() => {
+                        setControls(prev => ({ ...prev, time: prev.time + 10, playing: wasPlaying }));
+                    }, 1)
+                }}>
+                    <FastForwardIcon />
+                </Button>
+            </div>
+            <div className="flex flex-col gap-2 items-center jusitfy-center text-center">
+                <p className='text-sm'>Volume</p>
+                <Slider min={-100} max={100} defaultValue={[0]} className="w-[200px]" onValueChange={(value) => {
+                    if (controls.gainNode) {
+                        controls.gainNode.gain.value = value[0] / 100;
+                    }
+                }} />
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div
+            className='w-screen h-screen'
+            onDragOver={(e) => { e.preventDefault() }}
+            onDragEnter={(e) => { e.preventDefault() }}
+            onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files) setAudioFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
+            }}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            <ScrollArea className='min-w-full overflow-x-visible p-2 flex items-center flex-col text-center min-h-full'>
+                {audioFiles.map((file, i) => (
+                    <Waveform audioBlob={file} key={i} />
+                ))}
+                <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+        </div>
     </div>
-  );
 }
+
+export default Page
