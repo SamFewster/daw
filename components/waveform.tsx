@@ -15,13 +15,16 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
     const [muted, setMuted] = useState(false);
     const [track, setTrack] = useState<AudioBufferSourceNode | null>(null);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>();
+    const [loclaGainNode, setLocalGainNode] = useState<GainNode | null>();
 
     useEffect(() => {
         (async () => {
             setAudioBuffer(await controls.context!.decodeAudioData(await audioBlob.arrayBuffer()))
         })();
-        if (audioRef.current) {
-            audioRef.current.volume = 0;
+        if (controls.context) {
+            const loclaGainNode = controls.context.createGain();
+            loclaGainNode.connect(controls.gainNode!);
+            setLocalGainNode(loclaGainNode);
         }
         const url = URL.createObjectURL(audioBlob);
         console.log(url);
@@ -30,20 +33,6 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
             URL.revokeObjectURL(url);
         }
     }, [])
-
-    useEffect(() => {
-        if (controls.gainNode && track) track.connect(controls.gainNode);
-    }, [controls.gainNode])
-
-    useEffect(() => {
-        if (controls.gainNode && track) track.connect(controls.gainNode);
-    }, [track])
-
-    useEffect(() => {
-        if (audioRef.current) {
-            audioRef.current.volume = 0;
-        }
-    }, [blobURL])
 
     useEffect(() => {
         wavesurfer?.setTime(controls.time);
@@ -57,19 +46,18 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
                 const track = controls.context!.createBufferSource();
                 setTrack(track);
                 track.buffer = audioBuffer!;
-                track.connect(controls.context!.destination);
+                track.connect(loclaGainNode!);
+
                 track.start(0, controls.time);
             })();
         }
     }, [controls.playing])
 
     useEffect(() => {
-        if (audioRef.current && !muted) audioRef.current.volume = controls.volume / 100;
-    }, [controls.volume])
-
-    useEffect(() => {
-        if (muted && audioRef.current) audioRef.current.volume = 0;
-        else if (audioRef.current) audioRef.current.volume = controls.volume / 100;
+        if (loclaGainNode) {
+            if (muted) loclaGainNode.gain.value = 0;
+            else loclaGainNode.gain.value = controls.volume / 100;
+        }
     }, [muted])
 
     return (
@@ -82,7 +70,8 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
                 </Button>
             </div>
             <div>
-                {blobURL && <audio src={blobURL} ref={audioRef} onLoadedData={() => {
+                {blobURL && <audio src={blobURL} ref={audioRef} onLoadedData={(e) => {
+                    e.currentTarget.volume = 0;
                     setLoading(false);
                 }} />}
                 {!loading && audioRef.current && <WavesurferPlayer
@@ -97,7 +86,7 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
                     onInteraction={(ws) => {
                         setControls(prev => ({ ...prev, time: ws.getCurrentTime() }));
                     }}
-                    onPlay={() => { }} 
+                    onPlay={() => { }}
                     onPause={(ws) => {
                         setControls(prev => ({ ...prev, time: ws.getCurrentTime() }))
                     }}

@@ -20,7 +20,7 @@ const Page = () => {
         setControls(prev => ({ ...prev, context, gainNode }));
         (async () => {
             const response = await axios.get("/sample4.flac", { responseType: "blob" });
-            if (response) setAudioFiles([...Array(1).fill("").map(() => (response.data))]);
+            if (response) setAudioFiles([...Array(5).fill("").map(() => (response.data))]);
         })();
     }, [])
 
