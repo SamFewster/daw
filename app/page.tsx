@@ -24,6 +24,10 @@ const Page = () => {
         })();
     }, [])
 
+    document.addEventListener("keydown", (e) => {
+        console.log(e.key);
+    })
+
     return <div className="w-screen h-screen flex flex-col">
         <div className="w-screen bg-muted/50 flex items-center justify-between p-2">
             <div className="flex flex-col gap-2 items-center jusitfy-center text-center">
@@ -80,9 +84,11 @@ const Page = () => {
             }}
         >
             <ScrollArea className='min-w-full overflow-x-visible p-2 flex items-center flex-col text-center min-h-full'>
-                {audioFiles.map((file, i) => (
-                    <Waveform audioBlob={file} key={i} />
-                ))}
+                <div className="flex flex-col gap-1 w-full h-full">
+                    {audioFiles.map((file, i) => (
+                        <Waveform audioBlob={file} key={i} />
+                    ))}
+                </div>
                 <ScrollBar orientation="horizontal" />
             </ScrollArea>
         </div>
