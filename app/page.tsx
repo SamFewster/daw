@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios'
 import Waveform from '@/components/waveform';
 import { Button } from '@/components/ui/button';
-import { useControls } from '@/components/controls-provider';
+import { playPause, seekTime, useControls } from '@/components/controls-provider';
 import { FastForwardIcon, PauseIcon, PlayIcon } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -24,44 +24,38 @@ const Page = () => {
         })();
     }, [])
 
-    document.addEventListener("keydown", (e) => {
-        console.log(e.key);
-    })
+    if (typeof document !== "undefined") {
+        document.onkeydown = (e) => {
+            switch (e.key) {
+                case (" "):
+                    playPause(setControls);
+                    break;
+                case (","):
+                    seekTime(setControls, -10);
+                    break;
+                case ("."):
+                    seekTime(setControls, +10);
+                    break;
+                default:
+                    console.log(e.key);
+            }
+        }
+    }
 
     return <div className="w-screen h-screen flex flex-col">
         <div className="w-screen bg-muted/50 flex items-center justify-between p-2">
             <div className="flex flex-col gap-2 items-center jusitfy-center text-center">
                 <p className='text-sm'>Zoom</p>
-                <Slider value={[controls.zoom]} max={100} min={1} className="w-[200px]" onValueChange={(value) => setControls(prev => ({ ...prev, zoom: value[0] }))} />
+                <Slider value={[controls.zoom]} min={1} max={100} className="w-[200px]" onValueChange={(value) => setControls(prev => ({ ...prev, zoom: value[0] }))} />
             </div>
             <div className="flex gap-2 justify-center items-center">
-                <Button variant="outline" size="icon" onClick={() => {
-                    let wasPlaying = false;
-                    if (controls.playing) {
-                        wasPlaying = true;
-                        setControls(prev => ({ ...prev, playing: false }));
-                    }
-                    setTimeout(() => {
-                        setControls(prev => ({ ...prev, time: prev.time - 10, playing: wasPlaying }));
-                    }, 1)
-                }}>
+                <Button variant="outline" size="icon" onKeyDown={(e) => e.preventDefault()} onClick={() => seekTime(setControls, -10)}>
                     <FastForwardIcon className="rotate-180" />
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => {
-                    setControls(prev => ({ ...prev, playing: !controls.playing }))
-                }}>
+                <Button variant="outline" size="icon" onKeyDown={(e) => e.preventDefault()} onClick={() => playPause(setControls)}>
                     {controls.playing ? <PauseIcon /> : <PlayIcon />}
                 </Button>
-                <Button variant="outline" size="icon" onClick={() => {
-                    let wasPlaying = false;
-                    if (controls.playing) {
-                        wasPlaying = true;
-                        setControls(prev => ({ ...prev, playing: false }));
-                    }
-                    setTimeout(() => {
-                        setControls(prev => ({ ...prev, time: prev.time + 10, playing: wasPlaying }));
-                    }, 1)
-                }}>
+                <Button variant="outline" size="icon" onKeyDown={(e) => e.preventDefault()} onClick={() => seekTime(setControls, +10)}>
                     <FastForwardIcon />
                 </Button>
             </div>

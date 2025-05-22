@@ -72,7 +72,7 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
             <div onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const seekToTime = (e.clientX - rect.left) / ((controls.zoom / 100) * 20);
-                setControls(prev => ({ ...prev, time: seekToTime }));
+                setControls(prev => ({ ...prev, time: seekToTime, startedPlayingAt: prev.context!.currentTime }));
             }}>
                 {blobURL && <audio src={blobURL} ref={audioRef} onLoadedData={(e) => {
                     e.currentTarget.volume = 0;

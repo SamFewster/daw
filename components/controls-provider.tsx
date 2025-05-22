@@ -8,6 +8,7 @@ type ControlsProps = {
     volume: number;
     context: null | AudioContext;
     gainNode: null | GainNode;
+    startedPlayingAt: number;
 };
 
 type ControlsContextProps = {
@@ -25,7 +26,8 @@ const ControlsProvider = ({ children }: { children: React.ReactNode }) => {
         zoom: 50,
         volume: 100,
         context: null as null | AudioContext,
-        gainNode: null as null | GainNode
+        gainNode: null as null | GainNode,
+        startedPlayingAt: 0
     });
     return (
         <ControlsContext.Provider value={{ controls, setControls }}>
@@ -40,6 +42,14 @@ export const useControls = (): ControlsContextProps => {
         throw new Error("useControls must be used within a ControlsProvider");
     }
     return useContext(ControlsContext) as ControlsContextProps;
+}
+
+export const playPause = (setControls: React.Dispatch<React.SetStateAction<ControlsProps>>) => {
+    setControls(prev => ({ ...prev, playing: !prev.playing, startedPlayingAt: prev.context!.currentTime }));
+}
+
+export const seekTime = (setControls: React.Dispatch<React.SetStateAction<ControlsProps>>, offset: number) => {
+    setControls(prev => ({ ...prev, time: prev.time + (prev.context!.currentTime - prev.startedPlayingAt) + offset, startedPlayingAt: prev.context!.currentTime }));
 }
 
 export default ControlsProvider
