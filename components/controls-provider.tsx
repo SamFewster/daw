@@ -15,6 +15,35 @@ type ControlsContextProps = {
     controls: ControlsProps,
     setControls: React.Dispatch<React.SetStateAction<ControlsProps>>
 }
+class ControlsInterface {
+    public setControls: React.Dispatch<React.SetStateAction<ControlsProps>>;
+    constructor({ setControls }: ControlsContextProps) {
+        this.setControls = setControls;
+    }
+    public playPause() {
+        this.setControls(prev => ({ ...prev, playing: !prev.playing, startedPlayingAt: prev.context!.currentTime }));
+    }
+    public async seekTime(offset: number) {
+        const controls = await this.getControls();
+        const seekTo = controls.time + (controls.context!.currentTime - controls.startedPlayingAt) + offset;
+        if (seekTo > 0) {
+            this.setControls(prev => ({ ...prev, time: seekTo, startedPlayingAt: prev.context!.currentTime }));
+        } else this.setControls(prev => ({ ...prev, time: 0 }))
+    }
+    private async getControls(): Promise<ControlsProps> {
+        return new Promise((res) => {
+            this.setControls((prev) => {
+                res(prev);
+                return prev;
+            })
+        })
+    }
+}
+
+type ControlsReturnProps = {
+    controls: ControlsProps,
+    controlsInterface: ControlsInterface
+}
 
 const ControlsContext = createContext<ControlsContextProps | undefined>(undefined);
 
@@ -36,20 +65,15 @@ const ControlsProvider = ({ children }: { children: React.ReactNode }) => {
     )
 }
 
-export const useControls = (): ControlsContextProps => {
+export const useControls = (): ControlsReturnProps => {
     const context = useContext(ControlsContext);
     if (!context) {
         throw new Error("useControls must be used within a ControlsProvider");
     }
-    return useContext(ControlsContext) as ControlsContextProps;
-}
-
-export const playPause = (setControls: React.Dispatch<React.SetStateAction<ControlsProps>>) => {
-    setControls(prev => ({ ...prev, playing: !prev.playing, startedPlayingAt: prev.context!.currentTime }));
-}
-
-export const seekTime = (setControls: React.Dispatch<React.SetStateAction<ControlsProps>>, offset: number) => {
-    setControls(prev => ({ ...prev, time: prev.time + (prev.context!.currentTime - prev.startedPlayingAt) + offset, startedPlayingAt: prev.context!.currentTime }));
+    return {
+        controls: context.controls,
+        controlsInterface: new ControlsInterface(context)
+    };
 }
 
 export default ControlsProvider

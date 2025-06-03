@@ -10,7 +10,7 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
     const [blobURL, setBlobURL] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const { controls, setControls } = useControls();
+    const { controls, controlsInterface } = useControls();
     const [wavesurfer, setWavesurfer] = useState<WaveSurfer | null>(null);
     const [muted, setMuted] = useState(false);
     const [track, setTrack] = useState<AudioBufferSourceNode | null>(null);
@@ -72,7 +72,7 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
             <div onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 const seekToTime = (e.clientX - rect.left) / ((controls.zoom / 100) * 20);
-                setControls(prev => ({ ...prev, time: seekToTime, startedPlayingAt: prev.context!.currentTime }));
+                controlsInterface.setControls(prev => ({ ...prev, time: seekToTime, startedPlayingAt: prev.context!.currentTime }));
             }}>
                 {blobURL && <audio src={blobURL} ref={audioRef} onLoadedData={(e) => {
                     e.currentTarget.volume = 0;
@@ -91,7 +91,7 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
                     minPxPerSec={(controls.zoom / 100) * 20}
                     interact={false}
                     onPause={(ws) => {
-                        setControls(prev => ({ ...prev, time: ws.getCurrentTime() }))
+                        controlsInterface.setControls(prev => ({ ...prev, time: ws.getCurrentTime() }))
                     }}
                 />}
             </div>
