@@ -15,6 +15,8 @@ const Page = () => {
 
     const scrollAreaRef = useRef<HTMLDivElement | null>(null);
 
+    const [eventsHooked, setEventsHooked] = useState<boolean>(false);
+
     useEffect(() => {
         const context = new AudioContext();
         const gainNode = context.createGain();
@@ -26,7 +28,7 @@ const Page = () => {
         })();
     }, [])
 
-    if (typeof document !== "undefined") {
+    if (typeof document !== "undefined" && typeof window !== "undefined" && !eventsHooked) {
         document.onkeydown = (e) => {
             switch (e.key) {
                 case (" "):
@@ -54,6 +56,14 @@ const Page = () => {
                     console.log(e.key);
             }
         }
+        window.addEventListener("wheel", (e: WheelEvent) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                console.log(e.deltaY);
+                controlsInterface.setControls(prev => ({...prev, zoom: prev.zoom }));
+            }
+        }, { passive: false })
+        setEventsHooked(true);
     }
 
     return <div className="w-screen h-screen flex flex-col">
@@ -92,11 +102,11 @@ const Page = () => {
             }}
         >
             <ScrollArea className='min-w-full overflow-x-visible flex items-center flex-col text-center min-h-full' ref={scrollAreaRef}>
-                <div className='w-full bg-muted ml-[60px] flex justify-left items-center'>
+                {/* <div className='w-full bg-muted ml-[60px] flex justify-left items-center'>
                     <p style={{
                         paddingLeft: `${(controls.time + (controls.context!.currentTime - controls.startedPlayingAt)) * (controls.zoom / 100) * 20}px`
                     }}>test</p>
-                </div>
+                </div> */}
                 <div className="flex flex-col gap-1 w-full h-full p-2">
                     {audioFiles.map((file, i) => (
                         <Waveform audioBlob={file} key={i} />

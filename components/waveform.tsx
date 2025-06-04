@@ -60,6 +60,10 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
         }
     }, [muted])
 
+    useEffect(() => {
+        wavesurfer?.zoom((controls.zoom / 100) * 20);
+    }, [controls.zoom])
+
     return (
         <div className="flex">
             <div className="flex flex-col items-center justify-center p-2">
@@ -81,14 +85,13 @@ const Waveform = ({ audioBlob }: { audioBlob: Blob }) => {
                 {!loading && audioRef.current && <WavesurferPlayer
                     media={audioRef.current}
                     height={100}
-                    barWidth={3}
                     barRadius={10}
                     waveColor="red"
                     onReady={(ws) => {
                         setWavesurfer(ws);
                     }}
                     fillParent={false}
-                    minPxPerSec={(controls.zoom / 100) * 20}
+                    minPxPerSec={20}
                     interact={false}
                     onPause={(ws) => {
                         controlsInterface.setControls(prev => ({ ...prev, time: ws.getCurrentTime() }))
